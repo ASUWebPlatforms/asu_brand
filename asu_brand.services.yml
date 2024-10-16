@@ -1,3 +1,0 @@
-services:
-  asu_brand.helper_functions:
-    class: Drupal\asu_brand\AsuBrandHelperFunctions
