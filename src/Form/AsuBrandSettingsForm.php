@@ -58,21 +58,12 @@ class AsuBrandSettingsForm extends ConfigFormBase {
       '#title' => $this->t("About the ASU Brand module"),
       '#description' => $this->t("This module supplies key features for
         maintaining and displaying the ASU brand correctly in your site. It
-        bundles the ASU Header, Cookie Consent for GDPR compliance and ASU
+        bundles the ASU Header and ASU
         Google Tag Manager code into one package. The header is controlled
         and configured through this site's blocks interface. Depending on
         how you installed your site, the ASU global header may already be
-        enabled. Cookie consent and Google Tag Manager are configured below.
+        enabled. Google Tag Manager is configured below.
         For most sites, the defaults are recommended."),
-    ];
-    // Cookie Consent [enabled]
-    $form['asu_brand']['asu_brand_cookie_consent_enabled'] = [
-      '#type' => 'checkbox',
-      '#title' => $this->t('Enable ASU Cookie Consent'),
-      '#default_value' =>
-      $config->get('asu_brand.asu_brand_cookie_consent_enabled'),
-      '#description' => $this->t("Required for all public-facing sites to
-        ensure GDPR compliance."),
     ];
     // GTM enabled
     $form['asu_brand']['asu_brand_gtm_enabled'] = [
@@ -129,7 +120,6 @@ class AsuBrandSettingsForm extends ConfigFormBase {
     // Retrieve the configuration.
     $this->configFactory->getEditable(static::SETTINGS)
       // Set the submitted configurations on our config.
-      ->set('asu_brand.asu_brand_cookie_consent_enabled', $form_state->getValue('asu_brand_cookie_consent_enabled'))
       ->set('asu_brand.asu_brand_gtm_enabled', $form_state->getValue('asu_brand_gtm_enabled'))
       ->set('asu_brand.asu_brand_extra_gtm_id', $form_state->getValue('asu_brand_extra_gtm_id'))
       ->set('asu_brand.asu_brand_search_url', $form_state->getValue('asu_brand_search_url'))

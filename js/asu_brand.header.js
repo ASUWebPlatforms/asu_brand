@@ -25,7 +25,16 @@
   // Get config values passed in from AsuBrandHeaderBlock.php
   var props = drupalSettings.asu_brand.props;
 
-  // If there's an SSONAME cookie, patch it into the userName prop.
+  // ACMN-202 Obtain current site domain, if not explictly defined.
+  if (!props.site) {
+    props.site = window.location.host;
+  }
+  if (props.site === 'opt-out') {
+    delete props.site;
+  }
+
+  // Pantheon strips some cookie values before they hit PHP, so
+  // Attempt to get userName prop in JS here for those instances.
   var name = 'SSONAME=';
   var decodedCookie = decodeURIComponent(document.cookie);
   var ca = decodedCookie.split(';');
@@ -132,27 +141,11 @@
   //WS2-1291
   props.renderDiv = 'true';
 
-  // Initialize the asu_brand component-header header.
-  AsuHeader.initGlobalHeader({
+  // Initialize the asu_brand component-header-footer header.
+  AsuHeaderFooter.initGlobalHeader({
     targetSelector: '#ws2HeaderContainer',
     props: props
   });
-
-  // Initialize the cookie-consent banner component if we're configured for it.
-  var cookieConsentEnabled = drupalSettings.asu_brand.cookie_consent;
-  if (cookieConsentEnabled) {
-    window.addEventListener("DOMContentLoaded", event => {
-      // Initialize cookie consent banner
-      AsuCookieConsent.initCookieConsent({
-        targetSelector: "#ws2CookieConsentContainer",
-        props: {
-          enableCookieConsent: true,
-          expirationTime: 90, // Number of days to expire the consent
-        },
-      });
-    });
-  }
-
 
   // If we have a CAS login link in header, append return path.
   // ?destination=/your/path is currently not supported.

@@ -107,9 +107,9 @@ class AsuBrandHeaderBlock extends BlockBase {
     //Logo images.
     $app_path_folder = $this->getPathImgFolder();
     $props['logo'] = [
-      'alt' => 'Arizona State University',
+      'alt' => 'Arizona State University logo',
       // ws2-1305 - Adding title attribute. Note: UDS already provides it, but adding for good measure.
-      'title' => 'ASU home page',
+      'title' => 'ASU homepage',
       'src' => $app_path_folder . '/arizona-state-university-logo-vertical.png',
       'mobileSrc' => $app_path_folder . '/arizona-state-university-logo.png',
       'brandLink' => 'https://www.asu.edu',
@@ -126,8 +126,6 @@ class AsuBrandHeaderBlock extends BlockBase {
     // Markup containers where components will initialize.
     $block_output['#markup'] =
       $this->t('
-        <!-- Cookie Consent component will be initialized in this container. -->
-        <div id="ws2CookieConsentContainer" class="cookieConsentContainer"></div>
         <!-- Header component will be initialized in this container. -->
         <div id="ws2HeaderContainer"></div>');
     $tag_menu = $config['asu_brand_header_block_menu_enabled'] ? $config['asu_brand_header_block_menu_name'] : 'main';
@@ -141,9 +139,6 @@ class AsuBrandHeaderBlock extends BlockBase {
     $block_output['#attached']['library'][] = 'asu_brand/components-library';
     // Pass block configs to javascript. Gets taken up in js/asu_brand.header.js
     $block_output['#attached']['drupalSettings']['asu_brand']['props'] = $props;
-    // Get and pass cookie consent status, too.
-    $global_config = \Drupal::config('asu_brand.settings');
-    $block_output['#attached']['drupalSettings']['asu_brand']['cookie_consent'] = $global_config->get('asu_brand.asu_brand_cookie_consent_enabled');
     $block_output['#attached']['drupalSettings']['is_admin'] = \Drupal::currentUser()->hasPermission('administer site configuration');
     return $block_output;
   }
@@ -567,12 +562,32 @@ class AsuBrandHeaderBlock extends BlockBase {
               'color' => $child_link_custom_values['button_color'],
             ];
           } else {
+            // Look one more level to show children of headers
+            $child2Items = [];
+            if (!empty($child['below']) ) {
+              foreach ($child['below'] as $child2) {
+      
+                // Get values from menu link custom fields we have added.
+                $child2_link_custom_values = $this->getMenuLinkCustomValues($child2['original_link']);
+
+                  // Set all other menu link childItems, including link_type's:
+                  // heading && button
+                  $child2Items[] = [
+                    'href' => $child2['url']->toString(),
+                    'text' => $child2['title'],
+                    'type' => $child2_link_custom_values['link_type'],
+                  ];
+                
+              }
+            }
+
             // Set all other menu link childItems, including link_type's:
             // heading && button
             $childItems[] = [
               'href' => $child['url']->toString(),
               'text' => $child['title'],
               'type' => $child_link_custom_values['link_type'],
+              'children' => $child2Items,
             ];
           }
         }
@@ -641,6 +656,14 @@ class AsuBrandHeaderBlock extends BlockBase {
       $v['type'] = ($v['type'] === "stackable heading") ? "heading" : $v['type'];
 
       $childItemCols[$col][] = $v;
+
+      // If this is a heading, put its children into this column as well
+      if($v['type'] === "heading" ) {
+        foreach ($v['children'] as $l => $w) {
+          $childItemCols[$col][] = $w;
+        }
+      }
+      
       // We want first heading/column to stay in 0, so trigger here.
       // All subsequent passes will use new columns.
       $tripwire = true;
@@ -670,7 +693,7 @@ class AsuBrandHeaderBlock extends BlockBase {
   protected function getPathImgFolder() {
     $module_handler = \Drupal::service('module_handler');
     $path_module = $module_handler->getModule('asu_brand')->getPath();
-    $appPathFolder = base_path() . $path_module . '/node_modules/@asu/component-header/dist/assets/img';
+    $appPathFolder = base_path() . $path_module . '/node_modules/@asu/component-header-footer/dist/assets/img';
     return $appPathFolder;
   }
 }
