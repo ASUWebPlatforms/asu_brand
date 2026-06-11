@@ -1,6 +1,4 @@
-<?php /** @noinspection SqlDialectInspection */
-
-/** @noinspection SqlNoDataSourceInspection */
+<?php
 
 namespace Drupal\asu_brand\Plugin\Block;
 
@@ -10,7 +8,6 @@ use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Menu\MenuTreeParameters;
 use Drupal\Core\Cache\Cache;
-use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Url;
 
@@ -51,7 +48,7 @@ class AsuBrandHeaderBlock extends BlockBase {
       $props['buttons'][] = [
         "href" => $config['asu_brand_header_block_cta1_url'],
         "text" => $config['asu_brand_header_block_cta1_label'],
-        //"size" => "medium",
+        // "size" => "medium",
         "color" => $config['asu_brand_header_block_cta1_style']
       ];
     }
@@ -59,7 +56,7 @@ class AsuBrandHeaderBlock extends BlockBase {
       $props['buttons'][] = [
         "href" => $config['asu_brand_header_block_cta2_url'],
         "text" => $config['asu_brand_header_block_cta2_label'],
-        //"size" => "medium",
+        // "size" => "medium",
         "color" => $config['asu_brand_header_block_cta2_style']
       ];
     }
@@ -74,7 +71,9 @@ class AsuBrandHeaderBlock extends BlockBase {
         // for the SSONAME cookie and use that for userName if it exists. We
         // don't use a fallback here to ensure a stronger caching posture.
         $props['userName'] = t('You are logged in');
-      } else { // Force header to match Drupal login state even if there's an SSO session.
+        // Force header to match Drupal login state even if there's an SSO session.
+      }
+      else {
         $props['loggedIn'] = FALSE;
         $props['userName'] = '';
       }
@@ -104,7 +103,7 @@ class AsuBrandHeaderBlock extends BlockBase {
         $props['partnerLogo']['alt'] = $config['asu_brand_header_block_partner_logo_alt'];
       }
     }
-    //Logo images.
+    // Logo images.
     $app_path_folder = $this->getPathImgFolder();
     $props['logo'] = [
       'alt' => 'Arizona State University logo',
@@ -115,10 +114,11 @@ class AsuBrandHeaderBlock extends BlockBase {
       'brandLink' => 'https://www.asu.edu',
     ];
     // Search settings.
-    (array)$urls = \Drupal::service('asu_brand.helper_functions')->getSearchHosts();
+    (array) $urls = \Drupal::service('asu_brand.helper_functions')->getSearchHosts();
     $props['searchUrl'] = $urls['asu_search_url'];
     $props['site'] = $urls['url_host'];
-    if ($props['site'] === '') { // "opt-out" was selected
+    // "opt-out" was selected
+    if ($props['site'] === '') {
       unset($props['site']);
     }
 
@@ -134,10 +134,10 @@ class AsuBrandHeaderBlock extends BlockBase {
       // Break cache when block or menus change.
       'tags' => Cache::mergeTags($this->getCacheTags(), Cache::buildTags('config:system.menu', [$tag_menu], '.')),
     ];
-    // Attach components and helper js registered in asu_brand.libraries.yml
+    // Attach components and helper js registered in asu_brand.libraries.yml.
     $block_output['#attached']['library'][] = 'asu_react_core/react-core';
     $block_output['#attached']['library'][] = 'asu_brand/components-library';
-    // Pass block configs to javascript. Gets taken up in js/asu_brand.header.js
+    // Pass block configs to javascript. Gets taken up in js/asu_brand.header.js.
     $block_output['#attached']['drupalSettings']['asu_brand']['props'] = $props;
     $block_output['#attached']['drupalSettings']['is_admin'] = \Drupal::currentUser()->hasPermission('administer site configuration');
     return $block_output;
@@ -161,7 +161,9 @@ class AsuBrandHeaderBlock extends BlockBase {
     $form = parent::blockForm($form, $form_state);
 
     // Get system menu options.
-    $menu_options = array_map(function ($menu) { return $menu->label(); }, Menu::loadMultiple());
+    $menu_options = array_map(function ($menu) {
+      return $menu->label();
+    }, Menu::loadMultiple());
     asort($menu_options);
 
     // Currently unimplemented config items for props:
@@ -169,7 +171,7 @@ class AsuBrandHeaderBlock extends BlockBase {
     // expandOnHover TODO for future dev
     // mobileNavTree TODO for future dev
     // breakpoint TODO for future dev
-    // animateTitle TODO for future dev
+    // animateTitle TODO for future dev.
 
     // We localize most header settings to the block form to better support
     // microsites and subsites.
@@ -178,12 +180,12 @@ class AsuBrandHeaderBlock extends BlockBase {
     $config = $this->getConfiguration();
 
     // Titles (Main, Parent)
-    $form['titles'] = array(
+    $form['titles'] = [
       '#type' => 'details',
       '#title' => $this->t('Site titles'),
       '#open' => TRUE,
       '#collapsible' => FALSE
-    );
+    ];
     $form['titles']['asu_brand_header_block_title'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Site title'),
@@ -225,16 +227,13 @@ class AsuBrandHeaderBlock extends BlockBase {
       ],
     ];
 
-
-
-
-    $form['menus'] = array(
+    $form['menus'] = [
       '#type' => 'details',
       '#title' => $this->t('Menu settings'),
       '#open' => TRUE,
       '#collapsible' => FALSE
-    );
-    // Menu settings
+    ];
+    // Menu settings.
     $form['menus']['asu_brand_header_block_menu_enabled'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Insert menu into ASU header'),
@@ -249,51 +248,51 @@ class AsuBrandHeaderBlock extends BlockBase {
       '#description' => $this->t('Select the menu to insert.'),
       '#options' => $menu_options,
       '#default_value' => $config['asu_brand_header_block_menu_name'] ?? 'main',
-      '#states' => array(
+      '#states' => [
         // Display this field when the menu is enabled.
-        'visible' => array(
-          ':input[name="settings[asu_brand_header_block_menu_enabled]"]' => array(
+        'visible' => [
+          ':input[name="settings[asu_brand_header_block_menu_enabled]"]' => [
             'checked' => TRUE,
-          ),
-        ),
-      ),
+          ],
+        ],
+      ],
     ];
     $form['menus']['asu_brand_header_block_expand_on_hover'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Expand on hover'),
       '#description' => $this->t('If enabled, menu dropdowns will expand on hover. Allows for top-level menu items with children to be clickable as navigation destinations.'),
       '#default_value' => $config['asu_brand_header_block_expand_on_hover'] ?? 0,
-      '#states' => array(
+      '#states' => [
         // Display this field when the menu is enabled.
-        'visible' => array(
-          ':input[name="settings[asu_brand_header_block_menu_enabled]"]' => array(
+        'visible' => [
+          ':input[name="settings[asu_brand_header_block_menu_enabled]"]' => [
             'checked' => TRUE,
-          ),
-        ),
-      ),
+          ],
+        ],
+      ],
     ];
 
-    // CTA buttons
+    // CTA buttons.
     $style_options = [
       'gold' => 'Gold',
       'maroon' => 'Maroon',
       'light' => 'Gray 2',
       'dark' => 'Gray 7',
     ];
-    $form['cta'] = array(
+    $form['cta'] = [
       '#type' => 'details',
       '#title' => $this->t('Call To Action buttons'),
       '#description' => 'If desired, add one or two CTA buttons to the right hand side of the main site menu.',
       '#open' => FALSE,
       '#collapsible' => TRUE
-    );
-    // Button 1
-    $form['cta']['cta1'] = array(
+    ];
+    // Button 1.
+    $form['cta']['cta1'] = [
       '#type' => 'details',
       '#title' => $this->t('Button 1'),
       '#open' => TRUE,
       '#collapsible' => FALSE
-    );
+    ];
     $form['cta']['cta1']['asu_brand_header_block_cta1_label'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Text'),
@@ -303,14 +302,14 @@ class AsuBrandHeaderBlock extends BlockBase {
       '#type' => 'textfield',
       '#title' => $this->t('URL target'),
       '#default_value' => $config['asu_brand_header_block_cta1_url'] ?? '',
-      '#states' => array(
+      '#states' => [
         // Require this field when the label is filled.
-        'required' => array(
-          ':input[name="settings[cta][cta1][asu_brand_header_block_cta1_label]"]' => array(
+        'required' => [
+          ':input[name="settings[cta][cta1][asu_brand_header_block_cta1_label]"]' => [
             'filled' => TRUE,
-          ),
-        ),
-      ),
+          ],
+        ],
+      ],
     ];
     $form['cta']['cta1']['asu_brand_header_block_cta1_style'] = [
       '#type' => 'select',
@@ -318,13 +317,13 @@ class AsuBrandHeaderBlock extends BlockBase {
       '#default_value' => $config['asu_brand_header_block_cta1_style'] ?? '',
       '#options' => $style_options,
     ];
-    // Button 2
-    $form['cta']['cta2'] = array(
+    // Button 2.
+    $form['cta']['cta2'] = [
       '#type' => 'details',
       '#title' => $this->t('Button 2'),
       '#open' => TRUE,
       '#collapsible' => FALSE
-    );
+    ];
     $form['cta']['cta2']['asu_brand_header_block_cta2_label'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Text'),
@@ -334,14 +333,14 @@ class AsuBrandHeaderBlock extends BlockBase {
       '#type' => 'textfield',
       '#title' => $this->t('URL target'),
       '#default_value' => $config['asu_brand_header_block_cta2_url'] ?? '',
-      '#states' => array(
+      '#states' => [
         // Require this field when the label is filled.
-        'required' => array(
-          ':input[name="settings[cta][cta2][asu_brand_header_block_cta2_label]"]' => array(
+        'required' => [
+          ':input[name="settings[cta][cta2][asu_brand_header_block_cta2_label]"]' => [
             'filled' => TRUE,
-          ),
-        ),
-      ),
+          ],
+        ],
+      ],
     ];
     $form['cta']['cta2']['asu_brand_header_block_cta2_style'] = [
       '#type' => 'select',
@@ -350,7 +349,7 @@ class AsuBrandHeaderBlock extends BlockBase {
       '#options' => $style_options,
     ];
 
-    // Partner header
+    // Partner header.
     $form['partner'] = [
       '#type' => 'details',
       '#title' => $this->t('ASU Partner Header'),
@@ -362,14 +361,14 @@ class AsuBrandHeaderBlock extends BlockBase {
       '#type' => 'checkbox',
       '#title' => $this->t('Is Partner?'),
       '#default_value' => !empty($config['asu_brand_header_block_partner_enabled']) ?
-        $config['asu_brand_header_block_partner_enabled'] : 0,
+      $config['asu_brand_header_block_partner_enabled'] : 0,
     ];
     $form['partner']['asu_brand_header_block_partner_url'] = [
       '#type' => 'url',
       '#title' => $this->t('Partner URL'),
       '#description' => $this->t('URL of the partner unit. Absolute URLs only.'),
       '#default_value' => !empty($config['asu_brand_header_block_partner_url']) ?
-        $config['asu_brand_header_block_partner_url'] : '',
+      $config['asu_brand_header_block_partner_url'] : '',
       '#states' => [
         'required' => [
           ':input[name="settings[partner][asu_brand_header_block_partner_enabled]"]' => ['checked' => TRUE],
@@ -381,7 +380,7 @@ class AsuBrandHeaderBlock extends BlockBase {
       '#title' => $this->t('Partner Logo URL'),
       '#description' => $this->t('URL of the partner logo image. Absolute URLs only.'),
       '#default_value' => !empty($config['asu_brand_header_block_partner_logo_url']) ?
-        $config['asu_brand_header_block_partner_logo_url'] : '',
+      $config['asu_brand_header_block_partner_logo_url'] : '',
       '#states' => [
         'required' => [
           ':input[name="settings[partner][asu_brand_header_block_partner_enabled]"]' => ['checked' => TRUE],
@@ -393,7 +392,7 @@ class AsuBrandHeaderBlock extends BlockBase {
       '#title' => $this->t('Partner Logo Alt'),
       '#description' => $this->t('The ALT attribute of the partner logo image.'),
       '#default_value' => !empty($config['asu_brand_header_block_partner_logo_alt']) ?
-        $config['asu_brand_header_block_partner_logo_alt'] : '',
+      $config['asu_brand_header_block_partner_logo_alt'] : '',
       '#states' => [
         'required' => [
           ':input[name="settings[partner][asu_brand_header_block_partner_enabled]"]' => ['checked' => TRUE],
@@ -401,16 +400,15 @@ class AsuBrandHeaderBlock extends BlockBase {
       ],
     ];
 
-
-    // Login URLs
-    $form['logins'] = array(
+    // Login URLs.
+    $form['logins'] = [
       '#type' => 'details',
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
       '#description' => $this->t('Menu routing paths that trigger logons/logoffs (usually CAS-related in Webspark). ' .
       'Do not change these settings unless you know what you are doing.'),
       '#title' => $this->t('Login Paths')
-    );
+    ];
     $form['logins']['asu_brand_header_block_login_path'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Login path'),
@@ -445,7 +443,8 @@ class AsuBrandHeaderBlock extends BlockBase {
     $url = $form_state->getValue('asu_brand_header_block_parent_org_url');
     if (empty($url)) {
       return $form_state;
-    } else {
+    }
+    else {
       $abs = strpos($url, '://') !== FALSE;
       if (UrlHelper::isValid($url, $abs) !== TRUE) {
         $form_state->setErrorByName('asu_brand_header_block_parent_org_url', $this->t('Parent Org URL is not a valid URL.'));
@@ -511,39 +510,33 @@ class AsuBrandHeaderBlock extends BlockBase {
   /**
    * Build menu array for inclusion in header component navTree prop.
    *
-   * @param array $menu_name A menu tree's machine name.
+   * @param string $menu_name
+   *   A menu tree machine name.
    */
-  function getNavTree($menu_name) {
-
+  public function getNavTree(string $menu_name) {
     $menu_tree = \Drupal::menuTree();
-    // Load the entire tree.
     $parameters = new MenuTreeParameters();
-    // Limit to enabled items.
     $parameters->onlyEnabledLinks();
-
-    // Optionally set active trail.
     $menu_active_trail = \Drupal::service('menu.active_trail')->getActiveTrailIds($menu_name);
     $parameters->setActiveTrail($menu_active_trail);
-
-    // Load the tree based on this set of parameters.
     $tree = $menu_tree->load($menu_name, $parameters);
-    // Transform the tree using the manipulators you want.
     $manipulators = [
-      // Only show links that are accessible for the current user.
-      ['callable' => 'menu.default_tree_manipulators:checkAccess'],
-      // Use the default sorting of menu links.
-      ['callable' => 'menu.default_tree_manipulators:generateIndexAndSort'],
+    // Only show links that are accessible for the current user.
+    ['callable' => 'menu.default_tree_manipulators:checkAccess'],
+    // Use the default sorting of menu links.
+    ['callable' => 'menu.default_tree_manipulators:generateIndexAndSort'],
     ];
+
     $tree = $menu_tree->transform($tree, $manipulators);
-    // Finally, build a renderable array from the transformed tree.
     $menu_tmp = $menu_tree->build($tree);
     $navTree = [];
-    foreach ($menu_tmp['#items'] as $item) {
 
+    foreach ($menu_tmp['#items'] as $item) {
       // BUILD LEVEL 2 first, if extant, to put under parent.
       $childItems = [];
       $childTrayButtons = [];
       $childItemCols = [];
+
       if (!empty($item['below'])) {
         foreach ($item['below'] as $child) {
 
@@ -552,43 +545,48 @@ class AsuBrandHeaderBlock extends BlockBase {
 
           // Note on buttons: In childItems, we have two types of buttons:
           // 1. column buttons, denoted by childItem's link_type
-          // 2. dropdown tray buttons, denoted by childItem's is_button flag
-
+          // 2. dropdown tray buttons, denoted by childItem's is_button flag.
           if ($child_link_custom_values['is_button']) {
-            // Dropdown tray buttons and
+            // Dropdown tray buttons and.
             $childTrayButtons[] = [
               'href' => $child['url']->toString(),
               'text' => $child['title'],
               'color' => $child_link_custom_values['button_color'],
             ];
-          } else {
-            // Look one more level to show children of headers
+          }
+          else {
+            // Look one more level to show children of headers.
             $child2Items = [];
-            if (!empty($child['below']) ) {
+            if (!empty($child['below'])) {
               foreach ($child['below'] as $child2) {
-      
+
                 // Get values from menu link custom fields we have added.
                 $child2_link_custom_values = $this->getMenuLinkCustomValues($child2['original_link']);
 
-                  // Set all other menu link childItems, including link_type's:
-                  // heading && button
-                  $child2Items[] = [
-                    'href' => $child2['url']->toString(),
-                    'text' => $child2['title'],
-                    'type' => $child2_link_custom_values['link_type'],
-                  ];
-                
+                // Set all other menu link childItems, including link_type's:
+                // heading && button.
+                $child2Items[] = [
+                  'href' => $child2['url']->toString(),
+                  'text' => $child2['title'],
+                  'type' => $child2_link_custom_values['link_type'],
+                ];
+
               }
             }
 
             // Set all other menu link childItems, including link_type's:
-            // heading && button
-            $childItems[] = [
-              'href' => $child['url']->toString(),
-              'text' => $child['title'],
+            // heading && button.
+            $childItem = [
               'type' => $child_link_custom_values['link_type'],
-              'children' => $child2Items,
+              'span' => (int) $child_link_custom_values['row_span'],
             ];
+            // Only add href, text, and children if type is not 'column'.
+            if ($child_link_custom_values['link_type'] !== 'column') {
+              $childItem['href'] = $child['url']->toString();
+              $childItem['text'] = $child['title'];
+              $childItem['children'] = $child2Items;
+            }
+            $childItems[] = $childItem;
           }
         }
 
@@ -597,9 +595,9 @@ class AsuBrandHeaderBlock extends BlockBase {
       }
 
       // Get values from menu link custom fields we have added.
-      // $item_link_custom_values = $this->getMenuLinkCustomValues($item['original_link']);
+      // $item_link_custom_values = $this->getMenuLinkCustomValues($item['original_link']);.
 
-      // BUILD LEVEL 1
+      // BUILD LEVEL 1.
       $navTree[] = [
         'href' => $item['url']->toString(),
         'text' => $item['title'],
@@ -607,13 +605,13 @@ class AsuBrandHeaderBlock extends BlockBase {
         'buttons' => !empty($childTrayButtons) ? $childTrayButtons : '',
       ];
     }
+
     // First item always becomes Home icon.
     $navTree[0]['type'] = 'icon-home';
     $navTree[0]['class'] = 'home';
 
     return $navTree;
   }
-
 
   /**
    * Helper function to get custom menu link field values.
@@ -623,9 +621,11 @@ class AsuBrandHeaderBlock extends BlockBase {
     // Get custom fields we've added to menu links using the following approach
     // https://drupal.stackexchange.com/questions/235754/get-menu-link-item-from-menulinktreeelement
     // Maybe not the most OO way to go, but it works.
-    $link_type = null;
-    $is_button = null;
-    $button_color = null;
+    $link_type = NULL;
+    $is_button = NULL;
+    $button_color = NULL;
+    $row_span = NULL;
+
     if ($link instanceof MenuLinkContent) {
       $link_uuid = $link->getDerivativeId();
       $link_entity = \Drupal::service('entity.repository')
@@ -633,40 +633,77 @@ class AsuBrandHeaderBlock extends BlockBase {
       $link_type = $link_entity->menu_link_asu_brand_link_type->value;
       $is_button = $link_entity->menu_link_asu_brand_link_is_button->value;
       $button_color = $link_entity->menu_link_asu_brand_link_button_color->value;
+      $row_span = (int) $link_entity->menu_link_asu_brand_link_dropdown_row_span->value;
     }
 
-    return ['link_type' => $link_type, 'is_button' => $is_button, 'button_color' => $button_color];
+    return [
+      'link_type' => $link_type,
+      'is_button' => $is_button,
+      'button_color' => $button_color,
+      'row_span' => $row_span
+    ];
   }
 
   /**
    * Helper function to sort child menu links array into columns for navTree.
+   * NOTE: The 'heading' and 'column break' items are planned to be deprecated in January 2027
+   *
+   * TODO (deprecation cleanup):
+   * - Remove 'heading' and 'column break' checks once those link types are
+   *   fully removed from asu_brand menu link settings.
+   * - Remove legacy 'stackable heading' normalization once old content is
+   *   migrated and no longer uses that value.
+   * - Revisit child flattening behavior that currently depends on type
+   *   'heading', and confirm the replacement behavior for level-3 items.
    */
   private function sortChildLinksToCols($childItems) {
     $col = 0;
-    $tripwire = false;
+    $tripwire = FALSE;
+    $pendingSpan = 1;
     $childItemCols = [];
+
     foreach ($childItems as $k => $v) {
-      // Break out into columns if we have headings or column breaks.
-      if ($tripwire && ($v['type'] === "heading" || $v['type'] === "column break")) {
+      // Break out into columns if we have headings or column markers.
+      // TODO (deprecation cleanup): Remove 'heading' and 'column break'
+      // from this condition after those deprecated menu link types are removed.
+      if ($tripwire && ($v['type'] === "heading" || $v['type'] === "column break" || $v['type'] === "column")) {
         $col++;
       }
 
+      // "column" is a layout marker only. Use it to advance column state,
+      // but do not include it in the navTree payload. Carry its span forward
+      // to the first renderable item in the column, which is what the header
+      // component reads to size the column.
+      if ($v['type'] === "column") {
+        $pendingSpan = !empty($v['span']) ? (int) $v['span'] : 1;
+        $tripwire = TRUE;
+        continue;
+      }
+
       // "stackable heading" is a concept on the module side only. Converting
-      // to "heading" now for use in props. See WS2-1486
+      // to "heading" now for use in props. See WS2-1486.
+      // TODO (deprecation cleanup): Remove this conversion when deprecated
+      // heading variants are no longer allowed in menu link type values.
       $v['type'] = ($v['type'] === "stackable heading") ? "heading" : $v['type'];
+      if (empty($childItemCols[$col])) {
+        $v['span'] = $pendingSpan;
+        $pendingSpan = 1;
+      }
 
       $childItemCols[$col][] = $v;
 
-      // If this is a heading, put its children into this column as well
-      if($v['type'] === "heading" ) {
+      // If this is a heading, put its children into this column as well.
+      // TODO (deprecation cleanup): Replace this branch when 'heading' is
+      // removed, based on the finalized replacement information architecture.
+      if ($v['type'] === "heading") {
         foreach ($v['children'] as $l => $w) {
           $childItemCols[$col][] = $w;
         }
       }
-      
+
       // We want first heading/column to stay in 0, so trigger here.
       // All subsequent passes will use new columns.
-      $tripwire = true;
+      $tripwire = TRUE;
     }
     return $childItemCols;
   }
@@ -675,7 +712,7 @@ class AsuBrandHeaderBlock extends BlockBase {
    * Returns the base URL string.
    *
    * @return string
-   *  The base URL.
+   *   The base URL.
    */
   protected function getBaseUrl(): string {
     $config = $this->getConfiguration();
@@ -690,10 +727,14 @@ class AsuBrandHeaderBlock extends BlockBase {
     return $out;
   }
 
+  /**
+   *
+   */
   protected function getPathImgFolder() {
     $module_handler = \Drupal::service('module_handler');
     $path_module = $module_handler->getModule('asu_brand')->getPath();
     $appPathFolder = base_path() . $path_module . '/node_modules/@asu/component-header-footer/dist/assets/img';
     return $appPathFolder;
   }
+
 }

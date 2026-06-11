@@ -1,8 +1,9 @@
 components-library:
-  version: 2.18.10
+  version: 2.18.11
   dependencies:
     - core/drupal
     - core/drupalSettings
+    - asu_react_integration/reactjs
   js:
     node_modules/@asu/component-header-footer/dist/asuHeaderFooter.umd.js: {}
     js/asu_brand.header.js: {}
@@ -10,7 +11,7 @@ components-library:
     component:
       css/asu_brand.header.css: {}
 block__system_main_block:
-  version: 2.18.10
+  version: 2.18.11
   css:
     theme:
       css/asu-brand-edit-form.css: {}

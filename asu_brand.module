@@ -32,14 +32,35 @@ function asu_brand_entity_base_field_info(EntityTypeInterface $entity_type) {
       ->setDescription(t('This setting only applies if this link is used in the ASU Brand header as a second level menu link. Note: top level call to action buttons are configured in the header block.'))
       ->setSettings([
         'allowed_values' => [
-          //'icon' => 'Icon', // First link always becomes icon. Not allowing select for this.
-          'heading' => 'Heading - starts a column',
-          'stackable heading' => 'Heading - stackable in a column',
-          'column break' => 'Column break - starts a column without a heading',
-          'button' => 'Button - within column',
+          'column' => 'Column',
+          'stackable heading' => 'Heading',
+          'button' => 'Button',
+          'heading' => '(Deprecated) Heading - starts a column',
+          'column break' => '(Deprecated) Column break - starts a column without a heading',
         ],
       ])
       ->setDisplayOptions('form', ['type' => 'options_select', 'weight' => 50]);
+
+    // Row span
+    $fields['menu_link_asu_brand_link_dropdown_row_span'] = BaseFieldDefinition::create('integer')
+      ->setLabel(t('Column row span'))
+      ->setDescription(t('How many columns (max of 5) should appear in this row.'))
+      ->setSettings([
+        'min' => 1,
+        'max' => 5
+      ])
+      ->setDefaultValue(1)
+      ->setSetting('unsigned', TRUE)
+      ->setSetting('size', 'tiny')
+      ->setDisplayOptions('form', [
+        'type' => 'number',
+        'weight' => 51,
+        'settings' => [
+          'min' => '1',
+          'max' => '5',
+          'step' => '1',
+        ]
+      ]);
 
     // Is button
     $fields['menu_link_asu_brand_link_is_button'] = BaseFieldDefinition::create('boolean')
@@ -136,6 +157,16 @@ function asu_brand_form_alter(&$form, FormStateInterface $form_state, $form_id) 
         ':input[name="menu_link_asu_brand_link_is_button[value]"]' => ['checked' => TRUE],
       ],
     ];
+
+    // Show dropdown column row span only for stackable heading link type.
+    $form['menu_link_asu_brand_link_dropdown_row_span']['#states'] = [
+      'visible' => [
+        ':input[name="menu_link_asu_brand_link_type"]' => ['value' => 'column'],
+      ],
+      'enabled' => [
+        ':input[name="menu_link_asu_brand_link_type"]' => ['value' => 'column'],
+      ],
+    ];
   }
 }
 
@@ -151,28 +182,51 @@ function asu_brand_form_menu_link_content_form_alter(array &$form, FormStateInte
 
   $form['help'] = [
     '#type' => 'item',
-    '#title' => t('Header menu item controls'),
-    '#markup' => t('<p>The menu item settings below are only used in menus
-      configured as ASU Brand Header menus. Some guidelines to assist in
-      building your Header menu:</p>
+    '#title' => t('USING THE ASU BRAND HEADER'),
+    '#markup' => t('
+      <p><strong>HOW TO CONFIGURE YOUR HEADER</strong></p>
+      <p>Webspark sites install with the ASU header enabled and placed in the site layout by default with the Main menu configured as the header menu. Should you wish to reconfigure your header, or to add an additional header to your site, such as for a subsite or microsite, navigate to <strong>Admin -> Structure -> Blocks</strong> and place an <strong>"ASU brand header"</strong> block into the header region of your site. Each header block you create has its own independent settings. Most sites will only ever need one.</p>
+      <p>Within the ASU brand header block settings, you may change the settings of your header, but the defaults should work for most situations.</p>
+      <p>Please be aware that within <strong>ASU Brand Header</strong> menus:</p>
       <ul>
-        <li>The first menu item in an ASU Brand Header menu will automatically be
-        turned into the Home icon.</li>
-        <li>Only first and second level items are supported in
-        ASU Brand Header menus.</li>
-        <li>Create columns by configuring "Heading" or "Column break" menu
-        items at the second level. These special menu items will not render as
-        links, but will instead start new columns unless they are labelled as
-        "stackable." Use &lt;nolink&gt; as their link value. Direct children and subsequent siblings will render below a Heading in the ASU Brand Header menu.</li>
-        <li>When you configure a second level menu item as a button within a
-        column, please ensure it is the last item in a column, otherwise it may
-        render incorrectly in the mobile menu.</li>
-        <li>Web Standards requires menu dropdowns to be limited to 500px height
-        for desktop. Please check your dropdowns to ensure they comply.</li>
-        <li>For more help configuring your header, see the
-        <a href=":readme">README</a>.</li>
+        <li>The first menu item will automatically be turned into a Home icon.</li>
+        <li>Only first and second level items are supported.</li>
+        <li>Direct children and subsequent siblings will render below a <strong>Heading</strong> in the ASU Brand Header menu.</li>
+        <li>Within a dropdown or megu menu, please ensure that the <strong>Button</strong> menu type is the <strong>last</strong> item in a column!</li>
+        <li>Dropdowns and mega menus will be limited to 500px height for desktop.</li>
       </ul>
-      ', [":readme" => $readme_path]),
+
+      <p><strong>HOW TO USE BUTTONS</strong></p>
+      <p>There are three types of buttons available in the menu:</p>
+      <ol>
+        <li>Top level call to action buttons display alongside the top level menu items and are configured in the block configurations.</li>
+        <li>Buttons within drop down menus columns are configured on menu link item forms using the "ASU Brand menu link type" dropdown.</li>
+        <li>Buttons in the tray at the bottom of drop down menus are enabled by clicking a menu link item\'s "Display as ASU Brand button in dropdown tray" checkbox.</li>
+      </ol>
+      <p>For 2 and 3, enabling the button settings will transform that menu link into the corresponding button type <strong>ONLY</strong> if that menu item is in the second level of your menu. If those menu link fields are configured in non-header menus, they will be ignored.</p>
+
+      <p><strong>HOW TO CREATE A MEGA MENU</strong></p>
+      <ol>
+        <li>Create a top level menu item, and give it a "&lt;nolink&gt;" value for the Link field.</li>
+        <li>
+          Create a child item, and for the "ASU Brand menu link type", choose "Column".
+          <ul>
+            <li>Enabling this option will reveal a new "Column row span" option, which allows you to set the number of sub-columns your subsequent menu items will span.</li>
+            <li>Please note that in order for this to render properly, the "Column" must be the first item in the Dropdown.</li>
+            <li>The "Column" item is a layout marker only — it will not be rendered on its own and does not require a meaningful title or URL. Its sole purpose is to define where a new column begins and how wide that column should span.</li>
+          </ul>
+        </li>
+        <li>Continue to add menu items as needed.</li>
+        <li>To create a new column in the megu menu, repeat step 2.</li>
+      </ol>
+
+      <p>&#x1F6A9; <strong>DEPRECATION NOTICE</strong> &#x1F6A9;</p>
+      <ul>
+        <li>The <strong>Heading - starts a column</strong> option has been deprecated and will be removed in January 2027.</li>
+        <li>The <strong>Column break - starts a column without a heading</strong> option has been deprecated and will be removed in January 2027.</li>
+        <li>Please see the "How to create a mega menu" section above to convert your existing dropdowns or mega menus as needed.</li>
+      </ul>
+    '),
     '#weight' => 49,
   ];
 }
