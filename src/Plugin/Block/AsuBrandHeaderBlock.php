@@ -35,15 +35,13 @@ class AsuBrandHeaderBlock extends BlockBase {
 
     // Rally props to pass to JS as drupalSettings.
     $props = [];
-    $props['baseUrl'] = $config['asu_brand_header_block_base_url'] ?? $this->getBaseUrl();
+    $props['baseUrl'] = $this->getBaseUrl();
     $props['title'] = $config['asu_brand_header_block_title'];
     $props['parentOrg'] = $config['asu_brand_header_block_parent_org'];
     $props['parentOrgUrl'] = $config['asu_brand_header_block_parent_org_url'];
     $props['expandOnHover'] = $config['asu_brand_header_block_expand_on_hover'];
     $props['loginLink'] = $config['asu_brand_header_block_login_path'];
     $props['logoutLink'] = $config['asu_brand_header_block_logout_path'];
-    // TODO Further refine? There are styling issues w buttons IN the component.
-    //      For now, we hardcode the colors that look best.
     if ($config['asu_brand_header_block_cta1_url']) {
       $props['buttons'][] = [
         "href" => $config['asu_brand_header_block_cta1_url'],
@@ -248,9 +246,7 @@ class AsuBrandHeaderBlock extends BlockBase {
     $form['menus']['asu_brand_header_block_menu_enabled'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Insert menu into ASU header'),
-      '#description' => $this->t('Insert a site menu into the ASU header and display it responsively. Important note: the first enabled' .
-        ' menu link will always be treated as the home menu link and will be converted into a home icon. To change which menu link' .
-        ' is used as home, reorder your menu links.'),
+      '#description' => $this->t('Insert a site menu into the ASU header and display it responsively. Important note: the first enabled menu link will always be treated as the home menu link and will be converted into a home icon. To change which menu link is used as home, reorder your menu links.'),
       '#default_value' => $config['asu_brand_header_block_menu_enabled'] ?? 1,
     ];
     $form['menus']['asu_brand_header_block_menu_name'] = [
@@ -416,8 +412,7 @@ class AsuBrandHeaderBlock extends BlockBase {
       '#type' => 'details',
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
-      '#description' => $this->t('Menu routing paths that trigger logons/logoffs (usually CAS-related in Webspark). ' .
-      'Do not change these settings unless you know what you are doing.'),
+      '#description' => $this->t('Menu routing paths that trigger logons/logoffs (usually CAS-related in Webspark). Do not change these settings unless you know what you are doing.'),
       '#title' => $this->t('Login Paths')
     ];
     $form['logins']['asu_brand_header_block_login_path'] = [
@@ -657,7 +652,8 @@ class AsuBrandHeaderBlock extends BlockBase {
 
   /**
    * Helper function to sort child menu links array into columns for navTree.
-   * NOTE: The 'heading' and 'column break' items are planned to be deprecated in January 2027
+   *
+   * NOTE: The 'heading' and 'column break' items are planned to be deprecated in January 2027.
    *
    * TODO (deprecation cleanup):
    * - Remove 'heading' and 'column break' checks once those link types are
@@ -739,7 +735,10 @@ class AsuBrandHeaderBlock extends BlockBase {
   }
 
   /**
+   * Gets the web-accessible path to the ASU component image folder.
    *
+   * @return string
+   *   The base-relative URL path to the component image assets directory.
    */
   protected function getPathImgFolder() {
     $module_handler = \Drupal::service('module_handler');
