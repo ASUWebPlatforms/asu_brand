@@ -9,6 +9,7 @@
     "@asu/component-header-footer": "1.4.5"
   },
   "scripts": {
-    "postinstall": "node patch.js"
+    "build": "node build.js",
+    "postinstall": "yarn build"
   }
 }

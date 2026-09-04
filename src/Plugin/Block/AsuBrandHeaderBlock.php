@@ -144,7 +144,9 @@ class AsuBrandHeaderBlock extends BlockBase {
       '#partner_logo' => $props['partnerLogo'] ?? [],
     ];
     // Attach components and helper js registered in asu_brand.libraries.yml.
-    $block_output['#attached']['library'][] = 'asu_react_core/react-core';
+    // The header renders via its own self-contained component-header-footer
+    // bundle and does not need the full unity-react-core set, so react-core is
+    // intentionally not attached here; components that need it attach it.
     $block_output['#attached']['library'][] = 'asu_brand/components-library';
     // Pass block configs to javascript. Gets taken up in js/asu_brand.header.js.
     $block_output['#attached']['drupalSettings']['asu_brand']['props'] = $props;
@@ -653,7 +655,8 @@ class AsuBrandHeaderBlock extends BlockBase {
   /**
    * Helper function to sort child menu links array into columns for navTree.
    *
-   * NOTE: The 'heading' and 'column break' items are planned to be deprecated in January 2027.
+   * NOTE: The 'heading' and 'column break' items are planned to be deprecated
+   * in January 2027.
    *
    * TODO (deprecation cleanup):
    * - Remove 'heading' and 'column break' checks once those link types are
@@ -712,7 +715,7 @@ class AsuBrandHeaderBlock extends BlockBase {
       // All subsequent passes will use new columns.
       $tripwire = TRUE;
     }
-    return $childItemCols;
+    return array_values($childItemCols);
   }
 
   /**
@@ -735,7 +738,7 @@ class AsuBrandHeaderBlock extends BlockBase {
   }
 
   /**
-   * Gets the web-accessible path to the ASU component image folder.
+   * Returns the base path to the header component's bundled image assets.
    *
    * @return string
    *   The base-relative URL path to the component image assets directory.
@@ -743,7 +746,7 @@ class AsuBrandHeaderBlock extends BlockBase {
   protected function getPathImgFolder() {
     $module_handler = \Drupal::service('module_handler');
     $path_module = $module_handler->getModule('asu_brand')->getPath();
-    $appPathFolder = base_path() . $path_module . '/node_modules/@asu/component-header-footer/dist/assets/img';
+    $appPathFolder = base_path() . $path_module . '/dist/assets/img';
     return $appPathFolder;
   }
 

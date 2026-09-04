@@ -3,30 +3,10 @@
 
 # NodeJS projects
 ## Top-level
-node_modules/.cache
-node_modules/*
+node_modules/
 
-!node_modules/@asu
-node_modules/@asu/*
-!node_modules/@asu/component-cookie-consent
-node_modules/@asu/component-cookie-consent/*
-!node_modules/@asu/component-cookie-consent/dist
-node_modules/@asu/component-cookie-consent/dist/*
-!node_modules/@asu/component-header-footer
-node_modules/@asu/component-header-footer/*
-!node_modules/@asu/component-header-footer/dist
-node_modules/@asu/component-header-footer/dist/*
-!node_modules/@asu/component-header-footer/dist/asuHeaderFooter.umd.js
-!node_modules/@asu/component-header-footer/dist/assets
-!node_modules/@asu/component-header-footer/dist/assets/img
-!node_modules/@asu/component-header-footer/dist/assets/img/arizona-state-university-logo-vertical.png
-!node_modules/@asu/component-header-footer/dist/assets/img/arizona-state-university-logo.png
-!node_modules/@asu/component-header-footer/dist/assets/img/asu-starbucks.png
-!node_modules/@asu/component-header-footer/dist/assets/img/endorsedLogo.png
-!node_modules/@asu/component-header-footer/dist/assets/img/innovationLogo.png
-!node_modules/@asu/component-header-footer/dist/assets/images
-!node_modules/@asu/component-header-footer/dist/assets/images/endorsedLogo.png
-!node_modules/@asu/component-header-footer/dist/assets/images/innovationLogo.png
+# Built artifact (committed so no build step is required at deploy time)
+!dist/
 
 # Drupal/external libraries
 /vendor/

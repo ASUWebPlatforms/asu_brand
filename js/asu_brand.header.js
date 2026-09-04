@@ -1,3 +1,9 @@
+import { initASUFooter, initGlobalHeader } from '@asu/component-header-footer';
+
+// The footer library depends on this shared component bundle. Expose only its
+// initializer instead of restoring the legacy package-wide UMD global.
+window.websparkAsuHeaderFooter = { initASUFooter };
+
 (function (Drupal, drupalSettings) {
   // Not using behaviors for most of this.
   Drupal.behaviors.AsuBrandHeaderBehavior = {
@@ -162,7 +168,7 @@
   // markup inside #ws2HeaderContainer is visually hidden via CSS and is
   // replaced by React on mount, so there is no flash of unstyled content and
   // no class toggling is required here.
-  AsuHeaderFooter.initGlobalHeader({
+  initGlobalHeader({
     targetSelector: '#ws2HeaderContainer',
     props: props,
   });

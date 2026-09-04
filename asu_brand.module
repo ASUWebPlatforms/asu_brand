@@ -132,7 +132,12 @@ function asu_brand_form_alter(&$form, FormStateInterface $form_state, $form_id) 
       //$form['links']['links'][$child]['title'][1]['#title'] = "whatevs";
       $form['links']['links'][$child]['asu_brand']['#type'] = "item";
       if ($link_type) {
-        $form['links']['links'][$child]['asu_brand']['#markup'] = $link_type;
+        $markup = $link_type;
+        if ($link_type === "column") {
+          $span_value = $link_entity->menu_link_asu_brand_link_dropdown_row_span->value;
+          $markup .= " (span: " . $span_value . ")";
+        }
+        $form['links']['links'][$child]['asu_brand']['#markup'] = $markup;
       }
       if ($is_button) {
         $form['links']['links'][$child]['asu_brand']['#markup'] = t("dropdown tray button");
