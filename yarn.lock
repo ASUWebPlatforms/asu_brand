@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@asu/component-header-footer@1.4.5":
-  version "1.4.5"
-  resolved "https://npm.pkg.github.com/download/@asu/component-header-footer/1.4.5/4f1349892c4e3593b254c39b007b2c9924a9a825#4f1349892c4e3593b254c39b007b2c9924a9a825"
-  integrity sha512-h1SLdAhp4miRl7uoRT31TXEAFhBN583ad6qd0jhxIdism9XAvA/ZMxE+kthQ+RZcctFeNu3mZae4WJTY8vIM8A==
+"@asu/component-header-footer@1.6.1":
+  version "1.6.1"
+  resolved "https://npm.pkg.github.com/download/@asu/component-header-footer/1.6.1/1fb568322a235df37f6dd8b0fb0a604c57253a0c#1fb568322a235df37f6dd8b0fb0a604c57253a0c"
+  integrity sha512-XBniwthTpp5mmM210AUSvDhSBAo7oj7Y/1H7lFp64OExeIqEolsNzDua8opRME/h/8yOX0Srf2D/oh1DT/WQXQ==
   dependencies:
     "@fortawesome/fontawesome-svg-core" "^6.4.2"
     "@fortawesome/free-brands-svg-icons" "^6.4.2"
