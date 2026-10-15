@@ -14,6 +14,157 @@ use Drupal\Component\Serialization\Json;
  */
 
 /**
+ * Implements hook_library_info_alter().
+ *
+ * Serves the ACTIVE unbranded palette's generated stylesheet in place of the
+ * default Renovation stylesheet. This lives in the module (not the theme) on
+ * purpose: a theme's hook_library_info_alter only fires when that theme is
+ * active, so the Layout Builder off-canvas AJAX — which renders under the
+ * admin theme — would otherwise load the original renovation.style.css and
+ * override the palette. A module implementation fires in every context.
+ *
+ * Palettes are config entities at /admin/config/asu_brand/palettes; the
+ * PaletteCssGenerator produces the file by replacing the sentinel tokens of
+ * the compiled unbranded base. With no active palette the default stays.
+ */
+function asu_brand_library_info_alter(&$libraries, $extension) {
+  // Both entry points below only act on unbranded sites with an active palette.
+  if ($extension !== 'renovation' && $extension !== 'webspark_ckeditor_plugins') {
+    return;
+  }
+  if (!\Drupal::config('asu_brand.settings')->get('asu_brand.asu_brand_unbranded_enabled')) {
+    return;
+  }
+  $palette_url = \Drupal::service('asu_brand.palette_css_generator')->getActiveCssUrl();
+  if (!$palette_url) {
+    return;
+  }
+
+  // 1. Front-end: swap the Renovation stylesheet for the palette build.
+  if ($extension === 'renovation' && isset($libraries['style']['css']['theme']['assets/css/renovation.style.css'])) {
+    $css = &$libraries['style']['css']['theme'];
+    $options = $css['assets/css/renovation.style.css'];
+    // Root-relative generated file: skip aggregation, the filename is already
+    // content-hashed for cache busting.
+    $options['preprocess'] = FALSE;
+    unset($css['assets/css/renovation.style.css']);
+    // Keep the palette stylesheet first, ahead of tweaks.css.
+    $css = [$palette_url => $options] + $css;
+    return;
+  }
+
+  // 2. The webspark_ckeditor_plugins 'websparkplugin' library pulls the
+  //    Renovation stylesheet into the editing document by literal root-relative
+  //    path (so the CKEditor content area matches the site). That path bypasses
+  //    the renovation/style library and its palette swap above, so it reloads
+  //    the original ASU colors and overrides the palette in Layout Builder
+  //    off-canvas forms. Swap that path too so the editor follows the palette.
+  if ($extension === 'webspark_ckeditor_plugins' && isset($libraries['websparkplugin']['css']['theme'])) {
+    $theme_path = \Drupal::service('extension.list.theme')->getPath('renovation');
+    $original = '/' . $theme_path . '/assets/css/renovation.style.css';
+    $css = &$libraries['websparkplugin']['css']['theme'];
+    if (isset($css[$original])) {
+      $options = $css[$original];
+      unset($css[$original]);
+      $css = [$palette_url => $options] + $css;
+    }
+  }
+}
+
+/**
+ * Returns the active unbranded palette's editor labels for the brand tokens.
+ *
+ * @return array
+ *   Map of token => label for tokens the site exposes as color option labels
+ *   ('gold', 'maroon'). Empty when no palette is active or no labels are set.
+ */
+function asu_brand_active_palette_color_labels() {
+  $id = \Drupal::config('asu_brand.settings')->get('asu_brand.asu_brand_active_palette');
+  if (!$id) {
+    return [];
+  }
+  $palette = \Drupal::entityTypeManager()->getStorage('asu_brand_palette')->load($id);
+  if (!$palette) {
+    return [];
+  }
+  $labels = [];
+  foreach (['gold', 'maroon'] as $token) {
+    $label = $palette->getColorLabel($token);
+    if ($label !== NULL && $label !== '') {
+      $labels[$token] = $label;
+    }
+  }
+  return $labels;
+}
+
+/**
+ * Relabels the ASU brand color words in a select's #options for the palette.
+ *
+ * Replaces the whole words "Gold" / "Maroon" in each option label with the
+ * active palette's editor labels (e.g. "Gold background" => "Sunset
+ * background"). No-op when no palette is active, so branded sites are
+ * unaffected. Grays/neutrals are left untouched (not part of the palette).
+ *
+ * @param array $options
+ *   A select #options array (value => label).
+ *
+ * @return array
+ *   The options with brand color words relabeled.
+ */
+function asu_brand_relabel_color_options(array $options) {
+  $labels = asu_brand_active_palette_color_labels();
+  if (!$labels) {
+    return $options;
+  }
+  foreach ($options as $value => $label) {
+    $options[$value] = asu_brand_relabel_color_text((string) $label, $labels);
+  }
+  return $options;
+}
+
+/**
+ * Replaces whole-word "Gold"/"Maroon" in a string with palette labels.
+ *
+ * @param string $text
+ *   The source label text.
+ * @param array $labels
+ *   Map of token => palette label (see asu_brand_active_palette_color_labels).
+ *
+ * @return string
+ *   The relabeled text.
+ */
+function asu_brand_relabel_color_text($text, array $labels) {
+  $patterns = [
+    'gold' => '/\bGold\b/',
+    'maroon' => '/\bMaroon\b/',
+  ];
+  foreach ($patterns as $token => $pattern) {
+    if (!empty($labels[$token])) {
+      // Callback keeps the palette label literal (safe against $1/\1 in it).
+      $text = preg_replace_callback($pattern, function () use ($labels, $token) {
+        return $labels[$token];
+      }, $text);
+    }
+  }
+  return $text;
+}
+
+/**
+ * Implements hook_field_widget_single_element_form_alter().
+ *
+ * Relabels ASU brand color option labels (Gold/Maroon) to the active
+ * unbranded palette's editor labels for every options widget — covers the
+ * component color fields (accent color, hero background, links, highlight,
+ * heading highlight, etc.) and the header dropdown tray button color base
+ * field, without enumerating them.
+ */
+function asu_brand_field_widget_single_element_form_alter(&$element, \Drupal\Core\Form\FormStateInterface $form_state, $context) {
+  if (isset($element['#options']) && is_array($element['#options'])) {
+    $element['#options'] = asu_brand_relabel_color_options($element['#options']);
+  }
+}
+
+/**
  * Implements hook_theme().
  */
 function asu_brand_theme($existing, $type, $theme, $path) {

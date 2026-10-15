@@ -7,6 +7,7 @@
 
 namespace Drupal\asu_brand\Form;
 
+use Drupal\Core\Cache\Cache;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 
@@ -101,6 +102,37 @@ class AsuBrandSettingsForm extends ConfigFormBase {
       '#description' => $this->t('If empty, your current site\'s base URL will be used. Optionally, you can override
          with the URL of your choice to be used for scoping local search. Use the format: yourdomain.asu.edu'),
     ];
+    // Unbranded Webspark settings. Visible only with the dedicated permission.
+    $form['asu_brand']['unbranded'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Unbranded Webspark'),
+      '#open' => TRUE,
+      '#access' => $this->currentUser()->hasPermission('use unbranded webspark'),
+      '#description' => $this->t('For use only with prior approval. When
+        enabled, the ASU header and footer render in unbranded mode.'),
+    ];
+    $form['asu_brand']['unbranded']['asu_brand_unbranded_enabled'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Enable Unbranded Webspark'),
+      '#default_value' => $config->get('asu_brand.asu_brand_unbranded_enabled'),
+    ];
+    $palettes = \Drupal::entityTypeManager()->getStorage('asu_brand_palette')->loadMultiple();
+    $palette_options = ['' => $this->t('- None (default ASU colors) -')];
+    foreach ($palettes as $palette) {
+      $palette_options[$palette->id()] = $palette->label();
+    }
+    $form['asu_brand']['unbranded']['asu_brand_active_palette'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Active color palette'),
+      '#options' => $palette_options,
+      '#default_value' => $config->get('asu_brand.asu_brand_active_palette') ?? '',
+      '#description' => $this->t('Palette applied to the unbranded site. <a href=":url">Manage palettes</a>.', [':url' => '/admin/config/asu_brand/palettes']),
+      '#states' => [
+        'visible' => [
+          ':input[name="asu_brand_unbranded_enabled"]' => ['checked' => TRUE],
+        ],
+      ],
+    ];
     $form['#attached']['library'][] = 'asu_brand/';
     return parent::buildForm($form, $form_state);
   }
@@ -117,6 +149,17 @@ class AsuBrandSettingsForm extends ConfigFormBase {
     // Removing https:// and http:// for Local Search URL.
     $local_search_url = preg_replace("(^https?://)", "", $form_state->getValue('asu_brand_local_search_url'));
 
+    // The unbranded checkbox is permission-gated (#access): when the editor
+    // cannot see it, getValue() returns NULL and the stored flag must survive.
+    $unbranded_enabled = $form_state->getValue('asu_brand_unbranded_enabled');
+    if ($unbranded_enabled === NULL) {
+      $unbranded_enabled = $this->config(static::SETTINGS)->get('asu_brand.asu_brand_unbranded_enabled') ?? 0;
+    }
+    $active_palette = $form_state->getValue('asu_brand_active_palette');
+    if ($active_palette === NULL) {
+      $active_palette = $this->config(static::SETTINGS)->get('asu_brand.asu_brand_active_palette') ?? '';
+    }
+
     // Retrieve the configuration.
     $this->configFactory->getEditable(static::SETTINGS)
       // Set the submitted configurations on our config.
@@ -124,7 +167,14 @@ class AsuBrandSettingsForm extends ConfigFormBase {
       ->set('asu_brand.asu_brand_extra_gtm_id', $form_state->getValue('asu_brand_extra_gtm_id'))
       ->set('asu_brand.asu_brand_search_url', $form_state->getValue('asu_brand_search_url'))
       ->set('asu_brand.asu_brand_local_search_url', $local_search_url)
+      ->set('asu_brand.asu_brand_unbranded_enabled', (int) $unbranded_enabled)
+      ->set('asu_brand.asu_brand_active_palette', (string) $active_palette)
       ->save();
+
+    // Theme-level library alters keyed on the unbranded setting (stylesheet
+    // swap in Renovation) live in the cached library registry, which only
+    // listens to this tag. Invalidate it so toggling takes effect on save.
+    Cache::invalidateTags(['library_info']);
 
     parent::submitForm($form, $form_state);
   }

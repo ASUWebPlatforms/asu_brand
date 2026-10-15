@@ -31,7 +31,7 @@ class AsuBrandHeaderBlock extends BlockBase {
     // https://codimth.com/blog/web/drupal/passing-data-php-javascript-drupal-8
 
     // Pull in block-level configs (see blockForm()). Drupal manages deltas.
-    $config = $this->getConfiguration();
+    $config = $this->mapLegacyPartnerKeys($this->getConfiguration());
 
     // Rally props to pass to JS as drupalSettings.
     $props = [];
@@ -84,22 +84,36 @@ class AsuBrandHeaderBlock extends BlockBase {
     }
     $props['navTree'] = $navTree;
 
-    if (!empty($config['asu_brand_header_block_partner_enabled'])) {
+    if (!empty($config['asu_brand_header_block_alternate_logo_enabled'])) {
       $props['isPartner'] = TRUE;
 
       $props['partnerLogo'] = [];
 
-      if (!empty($config['asu_brand_header_block_partner_url'])) {
-        $props['partnerLogo']['brandLink'] = $config['asu_brand_header_block_partner_url'];
+      if (!empty($config['asu_brand_header_block_alternate_logo_link_url'])) {
+        $props['partnerLogo']['brandLink'] = $config['asu_brand_header_block_alternate_logo_link_url'];
       }
 
-      if (!empty($config['asu_brand_header_block_partner_logo_url'])) {
-        $props['partnerLogo']['src'] = $config['asu_brand_header_block_partner_logo_url'];
+      if (!empty($config['asu_brand_header_block_alternate_logo_image_url'])) {
+        $props['partnerLogo']['src'] = $config['asu_brand_header_block_alternate_logo_image_url'];
       }
 
-      if (!empty($config['asu_brand_header_block_partner_logo_alt'])) {
-        $props['partnerLogo']['alt'] = $config['asu_brand_header_block_partner_logo_alt'];
+      if (!empty($config['asu_brand_header_block_alternate_logo_alt'])) {
+        $props['partnerLogo']['alt'] = $config['asu_brand_header_block_alternate_logo_alt'];
       }
+    }
+    // Unbranded Webspark (WS2-3126 module setting): pass the unbranded props
+    // to the UDS component. The partner-logo fields double as the alternate
+    // (unbranded) logo. Inert until the UDS bundle supports isUnbranded.
+    if (\Drupal::config('asu_brand.settings')->get('asu_brand.asu_brand_unbranded_enabled')) {
+      $props['isUnbranded'] = TRUE;
+      $props['unbrandedLogo'] = array_filter([
+        'src' => $config['asu_brand_header_block_alternate_logo_image_url'] ?? '',
+        'alt' => $config['asu_brand_header_block_alternate_logo_alt'] ?? '',
+        'brandLink' => $config['asu_brand_header_block_alternate_logo_link_url'] ?? '',
+      ]);
+      // The unbranded header fully replaces the partner variant. Sending both
+      // flags would make the component render the ASU partner lockup as well.
+      unset($props['isPartner'], $props['partnerLogo']);
     }
     // Logo images.
     $app_path_folder = $this->getPathImgFolder();
@@ -129,7 +143,11 @@ class AsuBrandHeaderBlock extends BlockBase {
       '#theme' => 'asu_brand__header_block',
       '#cache' => [
         'contexts' => $this->getCacheContexts(),
-        'tags' => Cache::mergeTags($this->getCacheTags(), Cache::buildTags('config:system.menu', [$tag_menu], '.')),
+        'tags' => Cache::mergeTags(
+          $this->getCacheTags(),
+          Cache::buildTags('config:system.menu', [$tag_menu], '.'),
+          ['config:asu_brand.settings']
+        ),
       ],
       '#header_base_url' => $props['baseUrl'],
       '#title' => $props['title'],
@@ -140,7 +158,7 @@ class AsuBrandHeaderBlock extends BlockBase {
       '#buttons' => $props['buttons'] ?? [],
       '#login_link' => $config['asu_brand_header_block_login_path'] ?? '/caslogin',
       '#logout_link' => $config['asu_brand_header_block_logout_path'] ?? '/caslogout',
-      '#is_partner' => !empty($config['asu_brand_header_block_partner_enabled']),
+      '#is_partner' => !empty($config['asu_brand_header_block_alternate_logo_enabled']),
       '#partner_logo' => $props['partnerLogo'] ?? [],
     ];
     // Attach components and helper js registered in asu_brand.libraries.yml.
@@ -170,6 +188,7 @@ class AsuBrandHeaderBlock extends BlockBase {
    */
   public function blockForm($form, FormStateInterface $form_state) {
     $form = parent::blockForm($form, $form_state);
+    $this->configuration = $this->mapLegacyPartnerKeys($this->configuration);
 
     // Get system menu options.
     $menu_options = array_map(function ($menu) {
@@ -282,12 +301,12 @@ class AsuBrandHeaderBlock extends BlockBase {
     ];
 
     // CTA buttons.
-    $style_options = [
+    $style_options = asu_brand_relabel_color_options([
       'gold' => 'Gold',
       'maroon' => 'Maroon',
       'light' => 'Gray 2',
       'dark' => 'Gray 7',
-    ];
+    ]);
     $form['cta'] = [
       '#type' => 'details',
       '#title' => $this->t('Call To Action buttons'),
@@ -358,53 +377,71 @@ class AsuBrandHeaderBlock extends BlockBase {
       '#options' => $style_options,
     ];
 
-    // Partner header.
+    // Partner header. When Unbranded Webspark is enabled (asu_brand.settings)
+    // the same fields, under different labels, configure the alternate logo
+    // of the unbranded header instead. Same config keys either way.
+    $unbranded = (bool) \Drupal::config('asu_brand.settings')
+      ->get('asu_brand.asu_brand_unbranded_enabled');
     $form['partner'] = [
       '#type' => 'details',
-      '#title' => $this->t('ASU Partner Header'),
+      '#title' => $unbranded ? $this->t('Unbranded Header') : $this->t('ASU Partner Header'),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
-      '#description' => $this->t('<strong>Important</strong>: Use of the Partner Header must first be approved by the ASU Marketing Hub. Do not enable if you have not first received approval. Otherwise, leave this section blank.'),
+      '#description' => $unbranded
+        ? $this->t('Configure the alternate logo shown in place of the ASU logo while Unbranded Webspark is enabled.')
+        : $this->t('<strong>Important</strong>: Use of the Partner Header must first be approved by the ASU Marketing Hub. Do not enable if you have not first received approval. Otherwise, leave this section blank.'),
     ];
-    $form['partner']['asu_brand_header_block_partner_enabled'] = [
+    // The alternate-logo toggle is meaningless while Unbranded Webspark is
+    // enabled: the unbranded header reads the logo fields directly, so the
+    // checkbox only sets the branded "Is Partner?" flag that would surface once
+    // unbranded is turned off. Hide it and force it off in unbranded mode so it
+    // can never leak into the branded partner lockup.
+    $form['partner']['asu_brand_header_block_alternate_logo_enabled'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Is Partner?'),
-      '#default_value' => !empty($config['asu_brand_header_block_partner_enabled']) ?
-      $config['asu_brand_header_block_partner_enabled'] : 0,
+      '#access' => !$unbranded,
+      '#default_value' => $unbranded ? 0 : (!empty($config['asu_brand_header_block_alternate_logo_enabled']) ?
+      $config['asu_brand_header_block_alternate_logo_enabled'] : 0),
     ];
-    $form['partner']['asu_brand_header_block_partner_url'] = [
+    $form['partner']['asu_brand_header_block_alternate_logo_link_url'] = [
       '#type' => 'url',
-      '#title' => $this->t('Partner URL'),
-      '#description' => $this->t('URL of the partner unit. Absolute URLs only.'),
-      '#default_value' => !empty($config['asu_brand_header_block_partner_url']) ?
-      $config['asu_brand_header_block_partner_url'] : '',
+      '#title' => $unbranded ? $this->t('Alternate logo link URL') : $this->t('Partner URL'),
+      '#description' => $unbranded
+        ? $this->t('URL the alternate logo links to. Absolute URLs only.')
+        : $this->t('URL of the partner unit. Absolute URLs only.'),
+      '#default_value' => !empty($config['asu_brand_header_block_alternate_logo_link_url']) ?
+      $config['asu_brand_header_block_alternate_logo_link_url'] : '',
       '#states' => [
         'required' => [
-          ':input[name="settings[partner][asu_brand_header_block_partner_enabled]"]' => ['checked' => TRUE],
+          ':input[name="settings[partner][asu_brand_header_block_alternate_logo_enabled]"]' => ['checked' => TRUE],
         ],
       ],
     ];
-    $form['partner']['asu_brand_header_block_partner_logo_url'] = [
+    $form['partner']['asu_brand_header_block_alternate_logo_image_url'] = [
       '#type' => 'url',
-      '#title' => $this->t('Partner Logo URL'),
-      '#description' => $this->t('URL of the partner logo image. Absolute URLs only.'),
-      '#default_value' => !empty($config['asu_brand_header_block_partner_logo_url']) ?
-      $config['asu_brand_header_block_partner_logo_url'] : '',
+      '#title' => $unbranded ? $this->t('Alternate logo image URL') : $this->t('Partner Logo URL'),
+      '#description' => $unbranded
+        ? $this->t('URL of the alternate logo image. Absolute URLs only.')
+        : $this->t('URL of the partner logo image. Absolute URLs only.'),
+      '#default_value' => !empty($config['asu_brand_header_block_alternate_logo_image_url']) ?
+      $config['asu_brand_header_block_alternate_logo_image_url'] : '',
       '#states' => [
         'required' => [
-          ':input[name="settings[partner][asu_brand_header_block_partner_enabled]"]' => ['checked' => TRUE],
+          ':input[name="settings[partner][asu_brand_header_block_alternate_logo_enabled]"]' => ['checked' => TRUE],
         ],
       ],
     ];
-    $form['partner']['asu_brand_header_block_partner_logo_alt'] = [
+    $form['partner']['asu_brand_header_block_alternate_logo_alt'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Partner Logo Alt'),
-      '#description' => $this->t('The ALT attribute of the partner logo image.'),
-      '#default_value' => !empty($config['asu_brand_header_block_partner_logo_alt']) ?
-      $config['asu_brand_header_block_partner_logo_alt'] : '',
+      '#title' => $unbranded ? $this->t('Alternate logo alt text') : $this->t('Partner Logo Alt'),
+      '#description' => $unbranded
+        ? $this->t('The ALT attribute of the alternate logo image.')
+        : $this->t('The ALT attribute of the partner logo image.'),
+      '#default_value' => !empty($config['asu_brand_header_block_alternate_logo_alt']) ?
+      $config['asu_brand_header_block_alternate_logo_alt'] : '',
       '#states' => [
         'required' => [
-          ':input[name="settings[partner][asu_brand_header_block_partner_enabled]"]' => ['checked' => TRUE],
+          ':input[name="settings[partner][asu_brand_header_block_alternate_logo_enabled]"]' => ['checked' => TRUE],
         ],
       ],
     ];
@@ -497,14 +534,14 @@ class AsuBrandHeaderBlock extends BlockBase {
     $this->configuration['asu_brand_header_block_expand_on_hover'] =
       $values['menus']['asu_brand_header_block_expand_on_hover'];
 
-    $this->configuration['asu_brand_header_block_partner_enabled'] =
-      $values['partner']['asu_brand_header_block_partner_enabled'];
-    $this->configuration['asu_brand_header_block_partner_url'] =
-      $values['partner']['asu_brand_header_block_partner_url'];
-    $this->configuration['asu_brand_header_block_partner_logo_url'] =
-      $values['partner']['asu_brand_header_block_partner_logo_url'];
-    $this->configuration['asu_brand_header_block_partner_logo_alt'] =
-      $values['partner']['asu_brand_header_block_partner_logo_alt'];
+    $this->configuration['asu_brand_header_block_alternate_logo_enabled'] =
+      $values['partner']['asu_brand_header_block_alternate_logo_enabled'];
+    $this->configuration['asu_brand_header_block_alternate_logo_link_url'] =
+      $values['partner']['asu_brand_header_block_alternate_logo_link_url'];
+    $this->configuration['asu_brand_header_block_alternate_logo_image_url'] =
+      $values['partner']['asu_brand_header_block_alternate_logo_image_url'];
+    $this->configuration['asu_brand_header_block_alternate_logo_alt'] =
+      $values['partner']['asu_brand_header_block_alternate_logo_alt'];
 
     $this->configuration['asu_brand_header_block_login_path'] =
       $values['logins']['asu_brand_header_block_login_path'];
@@ -513,6 +550,33 @@ class AsuBrandHeaderBlock extends BlockBase {
     $this->configuration['asu_brand_header_block_sync_session'] =
       $values['logins']['asu_brand_header_block_sync_session'];
 
+  }
+
+  /**
+   * Maps legacy partner settings keys onto the alternate-logo keys.
+   *
+   * Safety net for block settings that predate the WS2-3130 key rename
+   * (asu_brand_update_10002), e.g. a site restored from an older backup.
+   *
+   * @param array $config
+   *   The block configuration.
+   *
+   * @return array
+   *   The configuration with alternate-logo keys populated.
+   */
+  private function mapLegacyPartnerKeys(array $config): array {
+    $legacy_map = [
+      'asu_brand_header_block_partner_enabled' => 'asu_brand_header_block_alternate_logo_enabled',
+      'asu_brand_header_block_partner_url' => 'asu_brand_header_block_alternate_logo_link_url',
+      'asu_brand_header_block_partner_logo_url' => 'asu_brand_header_block_alternate_logo_image_url',
+      'asu_brand_header_block_partner_logo_alt' => 'asu_brand_header_block_alternate_logo_alt',
+    ];
+    foreach ($legacy_map as $old_key => $new_key) {
+      if (!isset($config[$new_key]) && isset($config[$old_key])) {
+        $config[$new_key] = $config[$old_key];
+      }
+    }
+    return $config;
   }
 
   /**
